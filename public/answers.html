@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Submit Correct Answers</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #b71c1c;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4caf50;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button.deactivate {
+      background-color: #f44336;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .info-message {
+      color: green;
+      margin: 10px 0;
+    }
+    .error-message {
+      color: red;
+      margin: 10px 0;
+    }
+  </style>
+  <script>
+    // Load questions and saved answers
+    async function loadCorrectAnswers() {
+      try {
+        // Fetch questions and options
+        const questionsResponse = await fetch('/get-questions-and-options');
+        const questions = await questionsResponse.json();
+
+        // Fetch previously saved correct answers
+        const answersResponse = await fetch('/get-correct-answers');
+        const savedAnswers = await answersResponse.json();
+        const savedAnswersMap = savedAnswers.reduce((acc, { question_id, correct_option }) => {
+          acc[question_id] = correct_option;
+          return acc;
+        }, {});
+
+        // Populate the form
+        const questionsDiv = document.getElementById('questions');
+        questionsDiv.innerHTML = '';
+        questions.forEach(({ id, question, options }) => {
+          const questionDiv = document.createElement('div');
+          questionDiv.innerHTML = `<p>${question}</p>`;
+          options.forEach((option, index) => {
+            const isChecked = savedAnswersMap[id] === index ? 'checked' : '';
+            const input = `
+              <label>
+                <input type="radio" name="question${id}" value="${index}" ${isChecked}>
+                ${option}
+              </label><br>
+            `;
+            questionDiv.innerHTML += input;
+          });
+          questionsDiv.appendChild(questionDiv);
+        });
+      } catch (error) {
+        console.error('Error loading questions or answers:', error);
+      }
+    }
+
+    // Submit correct answers
+    async function submitCorrectAnswers(event) {
+      event.preventDefault();
+
+      // Gather selected answers
+      const correct_answers = [];
+      const inputs = document.querySelectorAll('input[type="radio"]:checked');
+      inputs.forEach(input => {
+        const questionId = parseInt(input.name.replace('question', ''), 10);
+        const correctOption = parseInt(input.value, 10);
+        correct_answers.push({ question_id: questionId, correct_option: correctOption });
+      });
+
+      try {
+        const response = await fetch('/submit-answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correct_answers }),
+        });
+
+        const result = await response.json();
+        alert(result.message);
+      } catch (error) {
+        console.error('Error submitting correct answers:', error);
+        alert('An error occurred while submitting answers.');
+      }
+    }
+
+    // Toggle submission status
+    async function toggleSubmissionStatus() {
+      try {
+        // Fetch the current status first
+        const response = await fetch('/get-submission-status');
+        const { allow_submissions } = await response.json();
+
+        // Toggle the current status
+        const newStatus = !allow_submissions;
+        await fetch('/toggle-submission-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allow_submissions: newStatus }),
+        });
+
+        // Update the button text and state
+        updateToggleButton(newStatus);
+        alert(`Submissions are now ${newStatus ? 'activated' : 'deactivated'}.`);
+      } catch (error) {
+        console.error('Error toggling submission status:', error);
+        alert('An error occurred while toggling submission status.');
+      }
+    }
+
+    // Update the toggle button text and class
+    function updateToggleButton(allowSubmissions) {
+      const toggleButton = document.getElementById('toggle-button');
+      if (allowSubmissions) {
+        toggleButton.textContent = 'Deactivate Submissions';
+        toggleButton.classList.remove('deactivate');
+        toggleButton.classList.add('activate');
+      } else {
+        toggleButton.textContent = 'Activate Submissions';
+        toggleButton.classList.remove('activate');
+        toggleButton.classList.add('deactivate');
+      }
+    }
+
+    // Initialize the page
+    async function initializePage() {
+      try {
+        // Fetch submission status
+        const response = await fetch('/get-submission-status');
+        const { allow_submissions } = await response.json();
+
+        // Update toggle button based on the current state
+        updateToggleButton(allow_submissions);
+
+        // Load questions and answers
+        await loadCorrectAnswers();
+      } catch (error) {
+        console.error('Error initializing page:', error);
+      }
+    }
+  </script>
+</head>
+<body onload="initializePage()">
+  <h1>Submit Correct Answers</h1>
+  <button id="toggle-button" class="deactivate" onclick="toggleSubmissionStatus()">Activate Submissions</button>
+  <form id="answers-form" onsubmit="submitCorrectAnswers(event)">
+    <div id="questions"></div>
+    <button type="submit">Submit Answers</button>
+  </form>
+</body>
+</html>

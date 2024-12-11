@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tip en 13'er</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #b71c1c;
+    }
+    #quiz-form {
+      margin-top: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    input[type="text"] {
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 30%;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4caf50;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .info-message {
+      color: green;
+      margin: 10px 0;
+    }
+    .error-message {
+      color: red;
+      margin: 10px 0;
+    }
+
+    /* Christmas Garland */
+    .garland {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+      padding: 0 10%;
+    }
+    .garland span {
+      width: 10px;
+      height: 10px;
+      margin: 5px;
+      border-radius: 50%;
+      background: red;
+      animation: blink 1s infinite alternate;
+    }
+    .garland span:nth-child(2n) {
+      background: green;
+      animation-delay: 0.2s;
+    }
+    .garland span:nth-child(3n) {
+      background: blue;
+      animation-delay: 0.4s;
+    }
+    .garland span:nth-child(4n) {
+      background: yellow;
+      animation-delay: 0.6s;
+    }
+    @keyframes blink {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0.3;
+      }
+    }
+
+    /* Christmas Tree */
+    .tree {
+      margin: 20px auto;
+      width: 0;
+      height: 0;
+      border-left: 50px solid transparent;
+      border-right: 50px solid transparent;
+      border-bottom: 100px solid green;
+      position: relative;
+    }
+    .tree:after {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      width: 40px;
+      height: 40px;
+      background: yellow;
+      border-radius: 50%;
+      box-shadow: 0 0 10px yellow;
+    }
+    .tree-decoration {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      box-shadow: 0 0 5px red;
+    }
+    .tree-decoration:nth-child(1) {
+      top: 20px;
+      left: 40px;
+    }
+    .tree-decoration:nth-child(2) {
+      top: 40px;
+      left: 30px;
+    }
+    .tree-decoration:nth-child(3) {
+      top: 40px;
+      left: 50px;
+    }
+    .tree-decoration:nth-child(4) {
+      top: 60px;
+      left: 20px;
+    }
+    .tree-decoration:nth-child(5) {
+      top: 60px;
+      left: 40px;
+    }
+    .tree-decoration:nth-child(6) {
+      top: 60px;
+      left: 60px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+  <script>
+    // Check submission status
+    async function checkSubmissionStatus() {
+      try {
+        const response = await fetch('/get-submission-status');
+        const { allow_submissions } = await response.json();
+        return allow_submissions;
+      } catch (error) {
+        console.error('Error fetching submission status:', error);
+        alert('An error occurred while checking the submission status.');
+        return false;
+      }
+    }
+
+    // Load quiz questions dynamically
+    async function loadQuestions() {
+      try {
+        const response = await fetch('/get-questions-and-options');
+        const questions = await response.json();
+
+        const questionsDiv = document.getElementById('questions');
+        questionsDiv.innerHTML = '';
+        questions.forEach(({ id, question, options }) => {
+          const questionDiv = document.createElement('div');
+          questionDiv.innerHTML = `<p>${question}</p>`;
+          options.forEach((option, index) => {
+            const input = `
+              <label>
+                <input type="radio" name="question${id}" value="${index}">
+                ${option}
+              </label><br>
+            `;
+            questionDiv.innerHTML += input;
+          });
+          questionsDiv.appendChild(questionDiv);
+        });
+      } catch (error) {
+        console.error('Error loading questions:', error);
+        alert('An error occurred while loading questions.');
+      }
+    }
+
+    // Submit quiz answers
+    async function submitQuiz(event) {
+      event.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const answers = Array.from(document.querySelectorAll('input[type="radio"]:checked')).reduce((acc, input) => {
+        const questionId = input.name.replace('question', '');
+        acc[questionId] = parseInt(input.value, 10);
+        return acc;
+      }, {});
+
+      try {
+        const fp = await FingerprintJS.load();
+        const fingerprint = (await fp.get()).visitorId;
+
+        const response = await fetch('/submit-quiz', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, answers, fingerprint }),
+        });
+
+        const result = await response.json();
+        alert(result.message);
+
+        // Reset the form for a new submission
+        document.getElementById('quiz-form').reset();
+      } catch (error) {
+        console.error('Error submitting quiz:', error);
+        alert('An error occurred while submitting the quiz.');
+      }
+    }
+
+    // Initialize the quiz page
+    async function initializePage() {
+      const allowSubmissions = await checkSubmissionStatus();
+
+      if (!allowSubmissions) {
+        document.getElementById('quiz-form').classList.add('hidden');
+        document.getElementById('status-message').textContent =
+          'Submissions are currently deactivated. Too bad - the game has started!';
+      } else {
+        document.getElementById('quiz-form').classList.remove('hidden');
+        document.getElementById('status-message').textContent = '';
+        await loadQuestions();
+      }
+    }
+  </script>
+</head>
+<body onload="initializePage()">
+  <h1>🎄 Tip en 13'er 🎅</h1>
+  <div class="garland">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <div class="tree">
+    <div class="tree-decoration"></div>
+    <div class="tree-decoration"></div>
+    <div class="tree-decoration"></div>
+    <div class="tree-decoration"></div>
+    <div class="tree-decoration"></div>
+    <div class="tree-decoration"></div>
+  </div>
+  <p id="status-message" class="message"></p>
+  <form id="quiz-form" class="hidden" onsubmit="submitQuiz(event)">
+    <input type="text" id="name" placeholder="Your Name" required />
+    <div id="questions"></div>
+    <button type="submit">Submit</button>
+  </form>
+</body>
+</html>

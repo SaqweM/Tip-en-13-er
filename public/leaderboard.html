@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaderboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #b71c1c;
+    }
+    table {
+      width: 50%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #f4f4f4;
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+  </style>
+  <script>
+    // Function to load the leaderboard
+    async function loadLeaderboard() {
+      try {
+        const response = await fetch('/leaderboard');
+        const leaderboard = await response.json();
+
+        const leaderboardTable = document.getElementById('leaderboard-table');
+        leaderboardTable.innerHTML = `
+          <tr>
+            <th>Rank</th>
+            <th>Name</th>
+            <th>Score</th>
+          </tr>
+        `;
+
+        leaderboard.forEach(({ name, score }, index) => {
+          const row = `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${name}</td>
+              <td>${score}</td>
+            </tr>
+          `;
+          leaderboardTable.innerHTML += row;
+        });
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+      }
+    }
+  </script>
+</head>
+<body onload="loadLeaderboard()">
+  <h1>Leaderboard</h1>
+  <table id="leaderboard-table"></table>
+</body>
+</html>
