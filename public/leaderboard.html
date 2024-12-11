@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaderboard</title>
+  <title>Top Svar / சிறந்த பதில்கள்</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -43,9 +43,9 @@
         const leaderboardTable = document.getElementById('leaderboard-table');
         leaderboardTable.innerHTML = `
           <tr>
-            <th>Rank</th>
-            <th>Name</th>
-            <th>Score</th>
+            <th>Rang / தரவரிசை</th>
+            <th>Navn / பெயர்</th>
+            <th>Score / மதிப்பெண்</th>
           </tr>
         `;
 
@@ -66,7 +66,7 @@
   </script>
 </head>
 <body onload="loadLeaderboard()">
-  <h1>Leaderboard</h1>
+  <h1>Top Svar / சிறந்த பதில்கள்</h1>
   <table id="leaderboard-table"></table>
 </body>
 </html>

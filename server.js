@@ -49,16 +49,16 @@ db.serialize(() => {
   // Pre-fill Questions table
   const questions = [
     {
-      question: 'What is the capital of France?',
-      options: ['Paris', 'Berlin', 'Madrid', 'Rome'],
+      question: 'Hvad er rigtigt?',
+      options: ['A', 'B', 'C', 'D'],
     },
     {
-      question: 'What is 2 + 2?',
-      options: ['3', '4', '5', '6'],
+      question: 'Hvem, hvad, hvornår?',
+      options: ['Hej', 'med', 'dig', 'Lollu'],
     },
     {
-      question: 'What is the largest planet in the Solar System?',
-      options: ['Earth', 'Mars', 'Jupiter', 'Venus'],
+      question: 'I need help...',
+      options: ['Yes', 'Please', 'No', 'Shit'],
     },
   ];
   questions.forEach(({ question, options }) => {
